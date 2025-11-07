@@ -1,250 +1,46 @@
-<!--
-집중모드 웹앱 (Single-file)
-사용법 요약 (파일 하단에도 안내 포함):
-1) 이 파일을 웹서버에 올리거나 (GitHub Pages / Netlify 추천)
-2) 아이폰 Safari로 접속 → 아래 공유 버튼 → ‘‘홈 화면에 추가’‘ 
-   (홈 화면에 추가하면 단축어 자동화에서 앱으로 선택 가능)
-3) 단축어 앱에서 자동화 만들기:
-   - "앱" 트리거: "앱이 열릴 때" → 홈화면에 추가한 웹앱 선택 → 동작: 포커스(방해금지) 켜기
-   - "앱" 트리거: "앱이 닫힐 때" → 같은 앱 선택 → 동작: 포커스 끄기
-   - "실행 전에 묻기" 끄기
 
-설명: 아이폰은 앱이 직접 포커스 모드를 켤 수 없지만, 단축어 자동화를 통해
-웹앱(홈 화면에 추가된)을 "앱"으로 취급해서 자동으로 포커스 모드를 켤 수 있습니다.
-
-디자인/기능 요약:
-- 반응형, 심플하고 세련된 디자인
-- 집중 타이머(프리셋 25/45/60분 + 커스텀 입력)
-- 시작 / 일시정지 / 종료 버튼
-- 집중 중에는 화사한 애니메이션 배경 + 알림음(브라우저에서 허용 시)
-- 세션 로그(간단한 로컬 저장)
-- 해제 버튼을 눌러 즉시 세션 종료
-
-주의: PWA 서비스 워커나 푸시 알림을 포함하지 않았음(간단한 웹앱 목적). 
--->
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>집중모드 — 시작하기</title>
-  <style>
-    :root{
-      --bg1: #0f172a; /* deep navy */
-      --bg2: #081229; /* darker */
-      --card: rgba(255,255,255,0.04);
-      --glass: rgba(255,255,255,0.06);
-      --accent: linear-gradient(90deg,#7c3aed,#06b6d4);
-      --accent-solid: #7c3aed;
-      --muted: rgba(255,255,255,0.65);
-      --radius: 18px;
-      --blur: 12px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    html,body{height:100%;margin:0;background:radial-gradient(1000px 600px at 10% 10%, rgba(124,58,237,0.12), transparent), radial-gradient(800px 500px at 90% 90%, rgba(6,182,212,0.06), transparent), linear-gradient(180deg,var(--bg1),var(--bg2)); color:white;-webkit-font-smoothing:antialiased;}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
-    .card{width:100%;max-width:480px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:24px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(var(--blur));border:1px solid rgba(255,255,255,0.03)}
-    header{display:flex;align-items:center;gap:12px}
-    .logo{width:56px;height:56px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(124,58,237,0.18)}
-    .logo strong{font-size:20px}
-    h1{font-size:20px;margin:0}
-    p.lead{margin:6px 0 16px;color:var(--muted);font-size:13px}
-
-    .timer-zone{display:grid;grid-template-columns:1fr 120px;gap:14px;align-items:center}
-    .controls{display:flex;flex-direction:column;gap:10px}
-    .presets{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{padding:12px 16px;border-radius:14px;background:var(--glass);border:1px solid rgba(255,255,255,0.04);cursor:pointer;font-weight:600}
-    .btn:active{transform:translateY(1px)}
-    .btn-accent{background: linear-gradient(90deg,#7c3aed,#06b6d4);color:white;border:none;box-shadow:0 8px 20px rgba(7,89,133,0.12)}
-    .time-display{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;border-radius:14px;background:transparent}
-    .big-time{font-size:48px;font-weight:700;letter-spacing:2px}
-    .small-label{color:var(--muted);font-size:12px}
-
-    .action-row{display:flex;gap:10px;align-items:center}
-    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
-
-    .wave-bg{position:relative;overflow:hidden;height:140px;border-radius:12px;margin-top:14px}
-    .wave{position:absolute;inset:0;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);display:flex;align-items:center;justify-content:center}
-    .pulse{width:100%;height:100%;background:radial-gradient(circle at 30% 30%, rgba(124,58,237,0.08), transparent 10%), radial-gradient(circle at 70% 70%, rgba(6,182,212,0.06), transparent 12%);filter:blur(40px);transform:scale(1);transition:transform 0.6s}
-    .pulse.running{transform:scale(1.06)}
-
-    footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
-
-    /* responsive */
-    @media (max-width:420px){.timer-zone{grid-template-columns:1fr} .wave-bg{height:120px}}
-
-    /* tiny helpers */
-    .muted{color:var(--muted)}
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>집중모드</title>
+  <link rel="stylesheet" href="/fouse mode app/style.css" />
 </head>
 <body>
-  <div class="wrap">
-    <main class="card" role="main">
-      <header>
-        <div class="logo"><strong>집중</strong></div>
-        <div>
-          <h1>집중모드 — 시작하기</h1>
-          <p class="lead">홈화면에 추가한 뒤 실행하면 자동으로 집중포커스가 켜지도록 단축어와 함께 사용하세요.</p>
-        </div>
-      </header>
-
-      <section style="margin-top:12px">
-        <div class="timer-zone">
-          <div class="controls">
-            <div class="presets">
-              <button class="btn" data-min="25">25분</button>
-              <button class="btn" data-min="45">45분</button>
-              <button class="btn" data-min="60">60분</button>
-              <button class="btn" id="customBtn">커스텀</button>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <input id="customInput" type="number" min="1" placeholder="분 입력" style="flex:1;padding:10px;border-radius:12px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:white" />
-              <button class="btn" id="setCustom">설정</button>
-            </div>
-
-            <div style="margin-top:12px;display:flex;gap:8px">
-              <button class="btn btn-accent" id="startBtn">시작</button>
-              <button class="btn btn-ghost" id="pauseBtn">일시정지</button>
-              <button class="btn btn-ghost" id="stopBtn">해제</button>
-            </div>
-
-            <div style="margin-top:10px;color:var(--muted);font-size:13px">세션 로그: <span id="sessionCount">0</span> 회</div>
-          </div>
-
-          <div class="time-display" style="text-align:center">
-            <div class="big-time" id="timeText">25:00</div>
-            <div class="small-label">남은 시간</div>
-          </div>
-        </div>
-
-        <div class="wave-bg">
-          <div class="wave"><div class="pulse" id="pulse"></div></div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:12px;align-items:center;justify-content:space-between">
-          <div class="muted">브라우저 기반 집중앱 — 홈화면에 추가해서 사용하세요</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn" id="shareHint">홈 화면에 추가 방법</button>
-          </div>
-        </div>
-      </section>
-
-      <footer>
-        <div>로컬 저장: 세션 횟수를 기록합니다</div>
-        <div>버전 1.0</div>
-      </footer>
-    </main>
+  <div class="container">
+    <h1>집중모드 진행 중 ⏱</h1>
+    <div id="timer">00:00:00</div>
+    <button id="exit-btn">해제하기</button>
   </div>
 
   <script>
-    // 간단한 집중 타이머 로직
-    let totalSec = 25*60;
-    let remaining = totalSec;
-    let running = false;
-    let timer = null;
-    const timeText = document.getElementById('timeText');
-    const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const pulse = document.getElementById('pulse');
-    const sessionCountEl = document.getElementById('sessionCount');
+    // 타이머 기능
+    let startTime = Date.now();
+    const timerEl = document.getElementById("timer");
 
-    function formatTime(s){
-      const m = Math.floor(s/60); const sec = s%60;
-      return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+    function updateTimer() {
+      const elapsed = Date.now() - startTime;
+      const hours = Math.floor(elapsed / 3600000);
+      const minutes = Math.floor((elapsed % 3600000) / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+
+      const formatted = 
+        String(hours).padStart(2, "0") + ":" +
+        String(minutes).padStart(2, "0") + ":" +
+        String(seconds).padStart(2, "0");
+
+      timerEl.textContent = formatted;
     }
 
-    function render(){
-      timeText.textContent = formatTime(remaining);
-      if(running) pulse.classList.add('running'); else pulse.classList.remove('running');
-    }
+    setInterval(updateTimer, 1000);
 
-    function tick(){
-      if(remaining>0){ remaining--; render(); }
-      else{ stop(); notifyFinish(); }
-    }
-
-    function start(){
-      if(running) return;
-      running = true; timer = setInterval(tick,1000); render();
-      // increase session count if newly started
-      let c = Number(localStorage.getItem('focus_sessions')||0);
-      if(remaining === totalSec) { c++; localStorage.setItem('focus_sessions', c); sessionCountEl.textContent = c; }
-    }
-    function pause(){ running=false; clearInterval(timer); timer=null; render(); }
-    function stop(){ running=false; clearInterval(timer); timer=null; remaining = totalSec; render(); }
-
-    function notifyFinish(){
-      // try to use Notification API (will require permission)
-      if(window.Notification && Notification.permission === 'granted'){
-        new Notification('집중 완료!', {body:'세션이 종료되었습니다. 휴식을 취하세요.'});
-      } else if(window.Notification && Notification.permission !== 'denied'){
-        Notification.requestPermission().then(p=>{ if(p==='granted') new Notification('집중 완료!',{body:'세션이 종료되었습니다.'}); });
-      }
-      // try vibrate (on supported devices)
-      if(navigator.vibrate) navigator.vibrate([200,100,200]);
-    }
-
-    // preset buttons
-    document.querySelectorAll('.presets .btn').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        const m = Number(b.dataset.min);
-        if(m){ totalSec = m*60; remaining = totalSec; render(); }
-      });
+    // 해제 버튼 클릭 시 사이트 닫기
+    document.getElementById("exit-btn").addEventListener("click", () => {
+      alert("집중모드를 해제하세요!");
+      // iPhone Safari에서는 window.close()가 안 되므로 빈 페이지로 이동
+      window.location.href = "about:blank";
     });
-
-    document.getElementById('setCustom').addEventListener('click', ()=>{
-      const v = Number(document.getElementById('customInput').value);
-      if(v && v>0){ totalSec = v*60; remaining = totalSec; render(); }
-    });
-
-    startBtn.addEventListener('click', ()=>{ start(); });
-    pauseBtn.addEventListener('click', ()=>{ if(running) pause(); else start(); });
-    stopBtn.addEventListener('click', ()=>{ stop(); });
-
-    // load session count
-    sessionCountEl.textContent = localStorage.getItem('focus_sessions')||0;
-
-    // share hint
-    document.getElementById('shareHint').addEventListener('click', ()=>{
-      alert('Safari에서 이 페이지를 연 뒤, 공유 버튼(네모와 화살표) → "홈 화면에 추가"를 선택하세요. 홈화면 아이콘을 만들면 단축어 자동화에서 이 앱을 선택할 수 있습니다.');
-    });
-
-    // prevent accidental navigation during a running session
-    window.addEventListener('beforeunload', (e)=>{
-      if(running){ e.preventDefault(); e.returnValue = ''; }
-    });
-
-    // accessibility: update initial render
-    render();
-
-    // small UX: if opened in standalone mode, show hint about shortcuts
-    function isStandalone(){ return (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true); }
-    if(isStandalone()){
-      console.log('Launched as standalone/home-screen app');
-    }
   </script>
-
-  <!--
-  추가 안내 (아이폰용 단축어 자동화 만들기)
-  1) 단축어 앱 열기 → 자동화 탭 → 개인용 자동화 생성
-  2) '앱' → '앱이 열릴 때' 선택 → "홈 화면에 추가한 이 웹앱" 선택
-  3) 동작 추가 → '포커스' 또는 '방해금지 모드' 켜기 (원하는 포커스 프로필 선택)
-  4) '실행 전에 묻기' 끈다 → 완료
-  5) 같은 방법으로 '앱이 닫힐 때' 자동화 만들어 포커스 끄기
-
-  호스팅 방법 간단 안내:
-  - GitHub Pages: 저장소에 이 파일을 index.html로 올리고 Settings → Pages에서 배포
-  - Netlify: drag & drop으로 배포 가능
-  - 또는 로컬에서 확인하려면 간단한 정적 서버(예: npm http-server)를 사용
-
-  사용 팁:
-  - 단축어 자동화 테스트 시, 홈 화면에서 아이콘을 눌러 실행하면 자동화가 트리거됩니다.
-  - "앱이 닫힐 때"는 iOS 버전과 동작에 따라 다르게 트리거될 수 있으니, 필요하면 수동으로 해제 버튼을 누르는 UX를 추가하세요.
-  -->
 </body>
 </html>
