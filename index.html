@@ -1,10 +1,17 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>집중모드</title>
+
+  <!-- ✅ iPhone 전체화면 모드 설정 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="집중모드">
+  <link rel="apple-touch-icon" href="icon.png">
+
+  <!-- ✅ CSS 경로 수정 (같은 폴더에 style.css가 있을 경우) -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,7 +22,7 @@
   </div>
 
   <script>
-    // 타이머 기능
+    // ⏱ 타이머 기능
     let startTime = Date.now();
     const timerEl = document.getElementById("timer");
 
@@ -25,7 +32,7 @@
       const minutes = Math.floor((elapsed % 3600000) / 60000);
       const seconds = Math.floor((elapsed % 60000) / 1000);
 
-      const formatted = 
+      const formatted =
         String(hours).padStart(2, "0") + ":" +
         String(minutes).padStart(2, "0") + ":" +
         String(seconds).padStart(2, "0");
@@ -35,10 +42,10 @@
 
     setInterval(updateTimer, 1000);
 
-    // 해제 버튼 클릭 시 사이트 닫기
+    // 🚪 해제 버튼 클릭 시
     document.getElementById("exit-btn").addEventListener("click", () => {
-      alert("집중모드를 해제하세요!");
-      // iPhone Safari에서는 window.close()가 안 되므로 빈 페이지로 이동
+      alert("집중모드를 해제합니다!");
+      // iPhone Safari에서는 window.close()가 불가능 → 빈 페이지로 이동
       window.location.href = "about:blank";
     });
   </script>
