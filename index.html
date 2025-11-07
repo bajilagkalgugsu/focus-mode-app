@@ -49,11 +49,6 @@
       // iPhone Safari에서는 window.close()가 불가능 → 빈 페이지로 이동
       window.location.href = "about:blank";
     });
-
-    // ✅ PWA 설치 감지용 (아이폰이 앱으로 인식할 때 필요)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
   </script>
 </body>
 </html>
