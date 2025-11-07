@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>집중모드 bs YS</title>
+  <title>집중모드 by YS</title>
 
   <!-- ✅ iPhone 전체화면 모드 설정 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -50,66 +50,10 @@
       window.location.href = "about:blank";
     });
 
-    <!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>집중모드 by YS</title>
-
-  <!-- ✅ iPhone 전체화면 모드 설정 -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="집중모드" />
-  <link rel="apple-touch-icon" href="icon.png" />
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- ✅ CSS 경로 수정 (같은 폴더에 style.css가 있을 경우) -->
-  <link rel="stylesheet" href="/fouse mode app/style.css" />
-</head>
-<body>
-  <div class="container">
-    <h1>집중모드 진행 중 ⏱</h1>
-    <div id="timer">00:00:00</div>
-    <button id="exit-btn">해제하기</button>
-  </div>
-
-  <script>
-    // ⏱ 타이머 기능
-    let startTime = Date.now();
-    const timerEl = document.getElementById("timer");
-
-    function updateTimer() {
-      const elapsed = Date.now() - startTime;
-      const hours = Math.floor(elapsed / 3600000);
-      const minutes = Math.floor((elapsed % 3600000) / 60000);
-      const seconds = Math.floor((elapsed % 60000) / 1000);
-
-      const formatted =
-        String(hours).padStart(2, "0") + ":" +
-        String(minutes).padStart(2, "0") + ":" +
-        String(seconds).padStart(2, "0");
-
-      timerEl.textContent = formatted;
-    }
-
-    setInterval(updateTimer, 1000);
-
-    // 🚪 해제 버튼 클릭 시
-    document.getElementById("exit-btn").addEventListener("click", () => {
-      alert("집중모드를 해제합니다!");
-      // iPhone Safari에서는 window.close()가 불가능 → 빈 페이지로 이동
-      window.location.href = "about:blank";
-    });
-
     // ✅ PWA 설치 감지용 (아이폰이 앱으로 인식할 때 필요)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js');
     }
-  </script>
-</body>
-</html>
-
   </script>
 </body>
 </html>
